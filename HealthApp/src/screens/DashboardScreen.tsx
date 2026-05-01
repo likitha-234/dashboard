@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Modal, TextInput, Alert, ActivityIndicator, RefreshControl,
@@ -8,11 +8,11 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import StatCard from '../components/StatCard';
 import RevenueChart from '../components/RevenueChart';
 import AppointmentCard from '../components/AppointmentCard';
-import { api, StatsResponse, Appointment, Doctor } from '../services/api';
+import { api, StatsResponse, Appointment, Doctor, Patient } from '../services/api';
 import { menuItems } from '../data/mockData';
 
 type RootStackParamList = {
-  Tabs: undefined;
+  Tabs: { screen?: 'Dashboard' | 'Appointments' | 'Profile' } | undefined;
   Patients: undefined;
   Doctors: undefined;
   Billing: undefined;
@@ -38,23 +38,75 @@ const PRESETS = [
   { label: 'Last year', getRange: (): DateRange => { const y = new Date().getFullYear() - 1; return { from: `${y}-01-01`, to: `${y}-12-31` }; } },
 ];
 
-function DatePickerModal({ visible, title, current, onSelect, onClose }: { visible: boolean; title: string; current: string; onSelect: (d: string) => void; onClose: () => void; }) {
-  const [val, setVal] = useState(current);
-  const confirm = () => {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) { onSelect(val); onClose(); }
-    else Alert.alert('Invalid date', 'Enter date as YYYY-MM-DD');
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_NAMES = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+
+const parseDate = (value: string) => {
+  const [y, m, d] = value.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
+function CalendarPickerModal({ visible, title, current, onSelect, onClose }: { visible: boolean; title: string; current: string; onSelect: (d: string) => void; onClose: () => void; }) {
+  const selected = parseDate(current);
+  const [viewDate, setViewDate] = useState(new Date(selected.getFullYear(), selected.getMonth(), 1));
+
+  useEffect(() => {
+    if (visible) setViewDate(new Date(selected.getFullYear(), selected.getMonth(), 1));
+  }, [visible, current]);
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstOffset = (new Date(year, month, 1).getDay() + 6) % 7;
+  const cells: React.ReactElement[] = [];
+
+  for (let i = 0; i < firstOffset; i++) {
+    cells.push(<View key={`empty-${i}`} style={dp.dayCell} />);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const value = toStr(new Date(year, month, day));
+    const isSelected = value === current;
+    cells.push(
+      <TouchableOpacity
+        key={value}
+        style={[dp.dayCell, dp.dayButton, isSelected && dp.daySelected]}
+        onPress={() => { onSelect(value); onClose(); }}
+      >
+        <Text style={[dp.dayText, isSelected && dp.dayTextSelected]}>{day}</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  const shiftMonth = (amount: number) => {
+    setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + amount, 1));
   };
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={dp.overlay}>
         <View style={dp.box}>
-          <Text style={dp.title}>{title}</Text>
-          <Text style={dp.hint}>Enter date (YYYY-MM-DD)</Text>
-          <TextInput style={dp.input} value={val} onChangeText={setVal} placeholder="2024-01-01" placeholderTextColor="#9CA3AF" keyboardType="numeric" maxLength={10} />
-          <View style={dp.row}>
-            <TouchableOpacity style={dp.cancel} onPress={onClose}><Text style={dp.cancelTxt}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={dp.confirm} onPress={confirm}><Text style={dp.confirmTxt}>Confirm</Text></TouchableOpacity>
+          <View style={dp.topRow}>
+            <Text style={dp.title}>{title}</Text>
+            <TouchableOpacity onPress={onClose}><Text style={dp.closeText}>Close</Text></TouchableOpacity>
           </View>
+
+          <View style={dp.monthRow}>
+            <TouchableOpacity style={dp.navBtn} onPress={() => shiftMonth(-1)}>
+              <Text style={dp.navText}>{'<'}</Text>
+            </TouchableOpacity>
+            <Text style={dp.monthTitle}>{MONTH_NAMES[month]} {year}</Text>
+            <TouchableOpacity style={dp.navBtn} onPress={() => shiftMonth(1)}>
+              <Text style={dp.navText}>{'>'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={dp.weekRow}>
+            {DAY_NAMES.map((day) => (
+              <View key={day} style={dp.dayCell}><Text style={dp.weekText}>{day}</Text></View>
+            ))}
+          </View>
+          <View style={dp.grid}>{cells}</View>
         </View>
       </View>
     </Modal>
@@ -62,15 +114,22 @@ function DatePickerModal({ visible, title, current, onSelect, onClose }: { visib
 }
 const dp = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
-  box: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: 300 },
-  title: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 },
-  hint: { fontSize: 12, color: '#6B7280', marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 10, fontSize: 15, color: '#111827', marginBottom: 16 },
-  row: { flexDirection: 'row', gap: 10 },
-  cancel: { flex: 1, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#D1D5DB', alignItems: 'center' },
-  cancelTxt: { fontSize: 14, color: '#6B7280' },
-  confirm: { flex: 1, padding: 10, borderRadius: 8, backgroundColor: '#2563EB', alignItems: 'center' },
-  confirmTxt: { fontSize: 14, color: '#fff', fontWeight: '700' },
+  box: { backgroundColor: '#fff', borderRadius: 16, padding: 18, width: 330 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  title: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  closeText: { fontSize: 13, color: '#2563EB', fontWeight: '700' },
+  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  navBtn: { width: 34, height: 34, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E5E7EB' },
+  navText: { fontSize: 16, color: '#374151', fontWeight: '800' },
+  monthTitle: { fontSize: 15, color: '#111827', fontWeight: '800' },
+  weekRow: { flexDirection: 'row', marginBottom: 6 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  dayCell: { width: `${100 / 7}%`, height: 38, alignItems: 'center', justifyContent: 'center' },
+  dayButton: { borderRadius: 10 },
+  daySelected: { backgroundColor: '#2563EB' },
+  weekText: { fontSize: 11, color: '#9CA3AF', fontWeight: '800' },
+  dayText: { fontSize: 13, color: '#374151', fontWeight: '600' },
+  dayTextSelected: { color: '#fff', fontWeight: '900' },
 });
 
 export default function DashboardScreen() {
@@ -85,6 +144,8 @@ export default function DashboardScreen() {
   const [stats, setStats]             = useState<StatsResponse | null>(null);
   const [todayAppts, setTodayAppts]   = useState<Appointment[]>([]);
   const [doctors, setDoctors]         = useState<Doctor[]>([]);
+  const [allDoctors, setAllDoctors]   = useState<Doctor[]>([]);
+  const [patients, setPatients]       = useState<Patient[]>([]);
   const [loading, setLoading]         = useState(true);
   const [refreshing, setRefreshing]   = useState(false);
   const [error, setError]             = useState<string | null>(null);
@@ -93,30 +154,35 @@ export default function DashboardScreen() {
     try {
       setError(null);
       const today = toStr(new Date());
-      const [statsData, apptData, docData] = await Promise.all([
-        api.getStats(),
+      const [statsData, apptData, docData, patientData] = await Promise.all([
+        api.getStats({ date_from: dateRange.from, date_to: dateRange.to }),
         api.getAppointments({ date_from: today, date_to: today }),
         api.getDoctors(),
+        api.getPatients(),
       ]);
       setStats(statsData);
       setTodayAppts(apptData);
+      setAllDoctors(docData);
       setDoctors(docData.slice(0, 3));
+      setPatients(patientData);
     } catch (e: any) {
       setError(e.message ?? 'Failed to load data');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [dateRange.from, dateRange.to]);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
   const handleMenuNav = (label: string) => {
     setMenuOpen(false);
     setTimeout(() => {
-      if      (label === 'Patients') navigation.navigate('Patients');
+      if      (label === 'Dashboard') navigation.navigate('Tabs', { screen: 'Dashboard' });
+      else if (label === 'Appointments') navigation.navigate('Tabs', { screen: 'Appointments' });
+      else if (label === 'Patients') navigation.navigate('Patients');
       else if (label === 'Doctors')  navigation.navigate('Doctors');
       else if (label === 'Billing')  navigation.navigate('Billing');
       else if (label === 'Pharmacy') navigation.navigate('Pharmacy');
@@ -126,6 +192,52 @@ export default function DashboardScreen() {
   };
 
   const applyFilter = () => { setDateRange(pendingRange); setFilterOpen(false); };
+
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+
+    const patientResults = patients
+      .filter((patient) => `${patient.name} ${patient.phone ?? ''} ${patient.email ?? ''}`.toLowerCase().includes(q))
+      .slice(0, 3)
+      .map((patient) => ({
+        id: `patient-${patient.id}`,
+        type: 'Patient',
+        title: patient.name,
+        subtitle: patient.phone || patient.email || 'Patient record',
+        route: 'Patients' as const,
+      }));
+
+    const doctorResults = allDoctors
+      .filter((doctor) => `${doctor.name} ${doctor.specialty}`.toLowerCase().includes(q))
+      .slice(0, 3)
+      .map((doctor) => ({
+        id: `doctor-${doctor.id}`,
+        type: 'Doctor',
+        title: doctor.name,
+        subtitle: doctor.specialty,
+        route: 'Doctors' as const,
+      }));
+
+    const appointmentResults = todayAppts
+      .filter((appt) => `${appt.patient_name} ${appt.doctor_name} ${appt.specialty}`.toLowerCase().includes(q))
+      .slice(0, 3)
+      .map((appt) => ({
+        id: `appt-${appt.id}`,
+        type: 'Appointment',
+        title: appt.patient_name,
+        subtitle: `${appt.doctor_name} - ${appt.appointment_time}`,
+        route: 'Appointments' as const,
+      }));
+
+    return [...patientResults, ...doctorResults, ...appointmentResults].slice(0, 6);
+  }, [search, patients, allDoctors, todayAppts]);
+
+  const openSearchResult = (route: 'Patients' | 'Doctors' | 'Appointments') => {
+    setSearch('');
+    if (route === 'Appointments') navigation.navigate('Tabs', { screen: 'Appointments' });
+    else navigation.navigate(route);
+  };
 
   const statCards = stats ? [
     { label: 'Total Revenue',   value: `₹${stats.totalRevenue.toLocaleString('en-IN')}`, icon: '💰', color: '#2563EB', change: '+12%' },
@@ -149,6 +261,24 @@ export default function DashboardScreen() {
         </View>
         <TouchableOpacity style={s.avatarBtn}><Text style={{ fontSize: 20 }}>👤</Text></TouchableOpacity>
       </View>
+
+      {search.trim().length > 0 && (
+        <View style={s.searchPanel}>
+          {searchResults.length === 0 ? (
+            <Text style={s.noResults}>No matches found</Text>
+          ) : (
+            searchResults.map((result) => (
+              <TouchableOpacity key={result.id} style={s.searchResult} onPress={() => openSearchResult(result.route)}>
+                <View style={s.searchType}><Text style={s.searchTypeText}>{result.type}</Text></View>
+                <View style={s.searchInfo}>
+                  <Text style={s.searchTitle}>{result.title}</Text>
+                  <Text style={s.searchSub}>{result.subtitle}</Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      )}
 
       {/* Hamburger drawer */}
       <Modal visible={menuOpen} transparent animationType="slide">
@@ -217,7 +347,7 @@ export default function DashboardScreen() {
       </Modal>
 
       {pickingDate && (
-        <DatePickerModal
+        <CalendarPickerModal
           visible title={pickingDate === 'from' ? 'Start Date' : 'End Date'}
           current={pickingDate === 'from' ? pendingRange.from : pendingRange.to}
           onSelect={(date) => { setActivePreset(null); if (pickingDate === 'from') setPendingRange(r => ({ ...r, from: date })); else setPendingRange(r => ({ ...r, to: date })); }}
@@ -346,6 +476,14 @@ const s = StyleSheet.create({
   searchIcon: { fontSize: 14, marginRight: 8 },
   searchInput: { flex: 1, fontSize: 13, color: '#111827' },
   avatarBtn: { marginLeft: 12, width: 38, height: 38, borderRadius: 19, backgroundColor: '#DBEAFE', alignItems: 'center', justifyContent: 'center' },
+  searchPanel: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB', paddingHorizontal: 16, paddingVertical: 8 },
+  noResults: { color: '#6B7280', fontSize: 13, paddingVertical: 10, textAlign: 'center' },
+  searchResult: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  searchType: { width: 82, paddingVertical: 4, borderRadius: 8, backgroundColor: '#EFF6FF', alignItems: 'center', marginRight: 10 },
+  searchTypeText: { color: '#2563EB', fontSize: 11, fontWeight: '800' },
+  searchInfo: { flex: 1 },
+  searchTitle: { color: '#111827', fontSize: 14, fontWeight: '800' },
+  searchSub: { color: '#6B7280', fontSize: 12, marginTop: 2 },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', flexDirection: 'row' },
   drawer: { width: '75%', backgroundColor: '#fff', paddingTop: 50, elevation: 10 },
   drawerHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', marginBottom: 8 },

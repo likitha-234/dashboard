@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Svg, { Path, Circle, G, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { api, RevenuePoint } from '../services/api';
 
-const SCREEN_W = Dimensions.get('window').width;
-const CHART_W  = SCREEN_W - 64;
 const CHART_H  = 200;
 const PAD_LEFT = 44;
 const PAD_BTM  = 28;
@@ -69,8 +67,8 @@ function buildAreaPath(points: { x: number; y: number }[], chartH: number, close
   return d;
 }
 
-function AreaChart({ data }: { data: RevenuePoint[] }) {
-  const w = CHART_W, h = CHART_H;
+function AreaChart({ data, width }: { data: RevenuePoint[]; width: number }) {
+  const w = Math.max(width, 220), h = CHART_H;
   const plotW = w - PAD_LEFT - 8;
   const plotH = h - PAD_BTM - PAD_TOP;
   const maxVal = Math.max(...data.map(d => d.nursing + d.pharmacy + d.homecare), 1);
@@ -158,6 +156,7 @@ export default function RevenueChart({ dateRange }: Props) {
   const [data, setData]           = useState<RevenuePoint[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
+  const [chartWidth, setChartWidth] = useState(0);
 
   useEffect(() => {
     const fetchRevenue = async () => {
@@ -221,7 +220,14 @@ export default function RevenueChart({ dateRange }: Props) {
         </View>
       ) : (
         <>
-          {chartPage === 0 && <AreaChart data={data} />}
+          {chartPage === 0 && (
+            <View
+              style={styles.chartWrap}
+              onLayout={(event) => setChartWidth(event.nativeEvent.layout.width)}
+            >
+              {chartWidth > 0 && <AreaChart data={data} width={chartWidth} />}
+            </View>
+          )}
           {chartPage === 1 && <DonutChart data={data} />}
 
           {chartPage === 0 && (
@@ -241,7 +247,8 @@ export default function RevenueChart({ dateRange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card:        { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
+  card:        { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, overflow: 'hidden' },
+  chartWrap:   { width: '100%', alignItems: 'center' },
   pageDotsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 4, gap: 8 },
   dotsRow:     { flexDirection: 'row', gap: 5 },
   dot:         { width: 7, height: 7, borderRadius: 4, backgroundColor: '#D1D5DB' },

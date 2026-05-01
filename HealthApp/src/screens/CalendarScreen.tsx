@@ -191,7 +191,7 @@ function MonthCard({
   // Count appts and revenue for this month
   const monthAppts = [...apptDates].filter(k => k.startsWith(`${year}-${pad(monthIndex + 1)}`)).length;
 
-  const cells: JSX.Element[] = [];
+  const cells: React.ReactElement[] = [];
   for (let i = 0; i < offset; i++) cells.push(<View key={`e${i}`} style={mc.cell} />);
 
   for (let d = 1; d <= daysInMonth; d++) {
@@ -365,7 +365,7 @@ export default function CalendarScreen() {
         </View>
       </View>
 
-      <ScrollView style={cs.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView style={cs.scroll} contentContainerStyle={cs.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Year stats */}
         {loadingYear ? (
           <View style={cs.loadingBox}><ActivityIndicator color="#2563EB" /></View>
@@ -425,7 +425,6 @@ export default function CalendarScreen() {
           />
         ))}
 
-        <View style={{ height: 32 }} />
       </ScrollView>
 
       <DayDetailModal
@@ -450,7 +449,8 @@ const cs = StyleSheet.create({
   navBtn:       { width: 30, height: 30, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E5E7EB' },
   navBtnTxt:    { fontSize: 16, color: '#374151', fontWeight: '600' },
   yearTxt:      { fontSize: 15, fontWeight: '700', color: '#111827', minWidth: 40, textAlign: 'center' },
-  scroll:       { paddingHorizontal: 16, paddingTop: 16 },
+  scroll:       { flex: 1 },
+  scrollContent:{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 36 },
   loadingBox:   { alignItems: 'center', paddingVertical: 30 },
   statsRow:     { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 12, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
   statItem:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },

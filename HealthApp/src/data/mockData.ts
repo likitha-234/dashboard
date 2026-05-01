@@ -35,7 +35,6 @@ export const menuItems = [
     { id: '2', label: 'Appointments', icon: '📅' },
     { id: '3', label: 'Patients', icon: '👥' },
     { id: '4', label: 'Doctors', icon: '👨‍⚕️' },
-    { id: '5', label: 'Reports', icon: '📊' },
     { id: '6', label: 'Calendar', icon: '🗓️' },   // ← ADD THIS
     { id: '7', label: 'Billing', icon: '💳' },
     { id: '8', label: 'Pharmacy', icon: '💊' },
