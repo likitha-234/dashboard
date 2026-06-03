@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, Patient } from '../services/api';
@@ -42,7 +42,7 @@ export default function PatientsScreen() {
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.back}>Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.back}>←</Text></TouchableOpacity>
         <View style={s.titleBlock}>
           <Text style={s.title}>Patients</Text>
           <Text style={s.subtitle}>{patients.length} total records</Text>
@@ -57,12 +57,11 @@ export default function PatientsScreen() {
       {loading ? (
         <View style={s.body}><ActivityIndicator color="#2563EB" /></View>
       ) : (
-        <ScrollView
-          style={s.scroll}
-          contentContainerStyle={s.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
-        >
+         <ScrollView 
+                  style={s.scroll}
+                  scrollEnabled={true}
+                  refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+                >
           {error && (
             <TouchableOpacity style={s.errorBox} onPress={fetchPatients}>
               <Text style={s.errorText}>{error}. Tap to retry.</Text>
@@ -85,8 +84,9 @@ export default function PatientsScreen() {
               </View>
             ))
           )}
+      
         </ScrollView>
-      )}
+     )}
     </SafeAreaView>
   );
 }
@@ -94,7 +94,7 @@ export default function PatientsScreen() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F1F5F9' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  back: { fontSize: 14, color: '#2563EB', fontWeight: '700' },
+  back: { fontSize: 20, color: '#2563EB', fontWeight: '700' },
   titleBlock: { flex: 1 },
   title: { fontSize: 18, fontWeight: '800', color: '#111827' },
   subtitle: { fontSize: 12, color: '#6B7280', marginTop: 2 },
@@ -102,8 +102,7 @@ const s = StyleSheet.create({
   searchIcon: { color: '#6B7280', fontSize: 12, fontWeight: '700', marginRight: 8 },
   searchInput: { flex: 1, height: 44, fontSize: 14, color: '#111827' },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 32 },
+  scroll: { flex: 1, paddingHorizontal: 16 },
   errorBox: { padding: 12, borderRadius: 10, backgroundColor: '#FEE2E2', marginBottom: 12 },
   errorText: { color: '#991B1B', fontSize: 13, fontWeight: '600' },
   empty: { padding: 28, alignItems: 'center' },

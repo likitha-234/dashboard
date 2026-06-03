@@ -25,7 +25,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.back}>Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.back}>←</Text></TouchableOpacity>
         <View style={s.titleBlock}>
           <Text style={s.title}>Settings</Text>
           <Text style={s.subtitle}>System preferences</Text>
@@ -37,7 +37,11 @@ export default function SettingsScreen() {
         <TextInput style={s.searchInput} value={search} onChangeText={setSearch} placeholder="Search settings..." placeholderTextColor="#9CA3AF" />
       </View>
 
-      <ScrollView style={s.scroll}>
+      <ScrollView 
+        style={s.scroll}
+        scrollEnabled={true}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
         <View style={s.summary}>
           <Text style={s.summaryLabel}>HealthApp</Text>
           <Text style={s.summaryTitle}>Admin settings</Text>
@@ -60,9 +64,9 @@ export default function SettingsScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F1F5F9' },
+  safe: { flex: 1, minHeight: '100%', backgroundColor: '#F1F5F9' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  back: { fontSize: 14, color: '#2563EB', fontWeight: '700' },
+  back: { fontSize: 20, color: '#2563EB', fontWeight: '700' },
   titleBlock: { flex: 1 },
   title: { fontSize: 18, fontWeight: '800', color: '#111827' },
   subtitle: { fontSize: 12, color: '#6B7280', marginTop: 2 },

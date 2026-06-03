@@ -20,7 +20,23 @@ const SERVICE_COLORS: Record<ServiceKey, { line: string; fill: string }> = {
   homecare: { line: '#8B5CF6', fill: '#DDD6FE' },
 };
 
-// ─── Donut data derived from revenue ─────────────────────────────────────────
+const formatAxisValue = (value: number) => {
+  if (value === 0) return '₹0';
+  if (value >= 100000) return `₹${Number((value / 100000).toFixed(1))}L`;
+  if (value >= 1000) return `₹${Math.round(value / 1000)}k`;
+  return `₹${value}`;
+};
+
+const niceCeil = (value: number) => {
+  if (value <= 0) return 1000;
+  const exponent = Math.floor(Math.log10(value));
+  const base = Math.pow(10, exponent);
+  const fraction = value / base;
+  const niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
+  return niceFraction * base;
+};
+
+// ─── Donut data derived from revenue ───────
 function buildDonutData(data: RevenuePoint[]) {
   const totals = { nursing: 0, pharmacy: 0, homecare: 0 };
   data.forEach(d => { totals.nursing += d.nursing; totals.pharmacy += d.pharmacy; totals.homecare += d.homecare; });
@@ -55,6 +71,16 @@ function donutSlices(data: { label: string; color: string; pct: number }[], cx: 
 
 function buildAreaPath(points: { x: number; y: number }[], chartH: number, close = false): string {
   if (points.length === 0) return '';
+  if (points.length === 1) {
+    const halfLine = 18;
+    const x1 = Math.max(PAD_LEFT, points[0].x - halfLine);
+    const x2 = points[0].x + halfLine;
+    const y = points[0].y;
+    if (close) {
+      return `M ${x1} ${y} L ${x2} ${y} L ${x2} ${chartH - PAD_BTM} L ${x1} ${chartH - PAD_BTM} Z`;
+    }
+    return `M ${x1} ${y} L ${x2} ${y}`;
+  }
   let d = `M ${points[0].x} ${points[0].y}`;
   for (let i = 1; i < points.length; i++) {
     const cx = (points[i - 1].x + points[i].x) / 2;
@@ -71,12 +97,32 @@ function AreaChart({ data, width }: { data: RevenuePoint[]; width: number }) {
   const w = Math.max(width, 220), h = CHART_H;
   const plotW = w - PAD_LEFT - 8;
   const plotH = h - PAD_BTM - PAD_TOP;
-  const maxVal = Math.max(...data.map(d => d.nursing + d.pharmacy + d.homecare), 1);
-  const yMax = Math.ceil(maxVal / 10000) * 10000;
-  const yTicks = [0, Math.round(yMax * 0.33 / 1000), Math.round(yMax * 0.66 / 1000), Math.round(yMax / 1000)];
+  const maxVal = Math.max(
+    ...data.flatMap(d => [d.nursing, d.pharmacy, d.homecare]),
+    1
+  );
+  const yMax = niceCeil(maxVal * 1.15);
+  const yTicks = [0, yMax * 0.25, yMax * 0.5, yMax * 0.75, yMax];
   const xStep = plotW / Math.max(data.length - 1, 1);
   const yScale = (v: number) => PAD_TOP + plotH - (v / yMax) * plotH;
-  const pts = (key: ServiceKey) => data.map((d, i) => ({ x: PAD_LEFT + i * xStep, y: yScale(d[key]) }));
+  const plotRight = PAD_LEFT + plotW;
+  const xPos = (i: number) => PAD_LEFT + i * xStep;
+  const pts = (key: ServiceKey) => {
+    if (data.length === 1) {
+      const y = yScale(data[0][key]);
+      return [
+        { x: PAD_LEFT, y },
+        { x: PAD_LEFT + plotW / 2, y },
+        { x: plotRight, y },
+      ];
+    }
+    return data.map((d, i) => ({ x: xPos(i), y: yScale(d[key]) }));
+  };
+  const markerPts = (key: ServiceKey) => (
+    data.length === 1
+      ? [{ x: PAD_LEFT + plotW / 2, y: yScale(data[0][key]) }]
+      : pts(key)
+  );
 
   return (
     <Svg width={w} height={h}>
@@ -89,12 +135,12 @@ function AreaChart({ data, width }: { data: RevenuePoint[]; width: number }) {
         ))}
       </Defs>
       {yTicks.map((t, i) => {
-        const y = yScale(t * 1000);
+        const y = yScale(t);
         return (
           <G key={i}>
             <Path d={`M ${PAD_LEFT} ${y} H ${w - 8}`} stroke="#E5E7EB" strokeWidth="1" strokeDasharray="4,4" />
             <SvgText x={PAD_LEFT - 4} y={y + 4} fontSize="9" fill="#9CA3AF" textAnchor="end">
-              {t === 0 ? '₹0' : `₹${t}k`}
+              {formatAxisValue(t)}
             </SvgText>
           </G>
         );
@@ -106,11 +152,13 @@ function AreaChart({ data, width }: { data: RevenuePoint[]; width: number }) {
         <Path key={`line_${k}`} d={buildAreaPath(pts(k), h, false)} fill="none" stroke={SERVICE_COLORS[k].line} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       ))}
       {data.map((d, i) => (
-        <SvgText key={i} x={PAD_LEFT + i * xStep} y={h - 6} fontSize="9" fill="#9CA3AF" textAnchor="middle">{d.month}</SvgText>
+        <SvgText key={i} x={data.length === 1 ? PAD_LEFT + plotW / 2 : xPos(i)} y={h - 6} fontSize="9" fill="#9CA3AF" textAnchor="middle">{d.month}</SvgText>
       ))}
-      {pts('nursing').map((p, i) => (
-        <Circle key={i} cx={p.x} cy={p.y} r={3} fill={SERVICE_COLORS.nursing.line} />
-      ))}
+      {(['homecare', 'pharmacy', 'nursing'] as ServiceKey[]).map((k) =>
+        markerPts(k).map((p, i) => (
+          <Circle key={`${k}_${i}`} cx={p.x} cy={p.y} r={3} fill={SERVICE_COLORS[k].line} />
+        ))
+      )}
     </Svg>
   );
 }

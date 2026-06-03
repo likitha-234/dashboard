@@ -355,10 +355,15 @@ export default function DashboardScreen() {
         />
       )}
 
-      <ScrollView style={s.scroll} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}>
+      <ScrollView 
+        style={s.scroll} 
+        scrollEnabled={true}
+        showsVerticalScrollIndicator={false} 
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+      >
         <View style={s.greetRow}>
           <View>
-            <Text style={s.greeting}>Good morning 👋</Text>
+            <Text style={s.greeting}>Hello 👋</Text>
             <Text style={s.greetSub}>Here's what's happening today</Text>
           </View>
           <View style={s.dateBadge}><Text style={s.dateText}>📅 {todayLabel}</Text></View>

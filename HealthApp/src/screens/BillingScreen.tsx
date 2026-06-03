@@ -37,7 +37,7 @@ export default function BillingScreen() {
     <SafeAreaView style={s.safe}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={s.back}>Back</Text>
+          <Text style={s.back}>←</Text>
         </TouchableOpacity>
         <Text style={s.title}>Billing</Text>
       </View>
@@ -47,6 +47,8 @@ export default function BillingScreen() {
       ) : (
         <ScrollView
           style={s.scroll}
+          scrollEnabled={true}
+          contentContainerStyle={{ flexGrow: 1 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
         >
           <View style={s.totalCard}>
@@ -83,9 +85,9 @@ export default function BillingScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F1F5F9' },
+  safe: { flex: 1, minHeight: '100%', backgroundColor: '#F1F5F9' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  back: { fontSize: 14, color: '#2563EB', fontWeight: '700' },
+  back: { fontSize: 20, color: '#2563EB', fontWeight: '700' },
   title: { fontSize: 18, fontWeight: '800', color: '#111827' },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1, padding: 16 },

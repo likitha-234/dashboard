@@ -51,7 +51,7 @@ export default function PharmacyScreen() {
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.back}>Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.back}>←</Text></TouchableOpacity>
         <View style={s.titleBlock}>
           <Text style={s.title}>Pharmacy</Text>
           <Text style={s.subtitle}>{items.length} medicines - {money(inventoryValue)} value</Text>
@@ -74,7 +74,12 @@ export default function PharmacyScreen() {
       {loading ? (
         <View style={s.body}><ActivityIndicator color="#2563EB" /></View>
       ) : (
-        <ScrollView style={s.scroll} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}>
+        <ScrollView 
+          style={s.scroll}
+          scrollEnabled={true}
+          contentContainerStyle={{ flexGrow: 1 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+        >
           {error && (
             <TouchableOpacity style={s.errorBox} onPress={fetchItems}>
               <Text style={s.errorText}>{error}. Tap to retry.</Text>
@@ -108,9 +113,9 @@ export default function PharmacyScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F1F5F9' },
+  safe: { flex: 1, minHeight: '100%', backgroundColor: '#F1F5F9' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  back: { fontSize: 14, color: '#2563EB', fontWeight: '700' },
+  back: { fontSize: 20, color: '#2563EB', fontWeight: '700' },
   titleBlock: { flex: 1 },
   title: { fontSize: 18, fontWeight: '800', color: '#111827' },
   subtitle: { fontSize: 12, color: '#6B7280', marginTop: 2 },

@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { api, Appointment, DailyRevenue } from '../services/api';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAY_LABELS = ['Mo','Tu','We','Th','Fr','Sa','Su'];
 
@@ -38,7 +38,7 @@ function dateKey(year: number, month: number, day: number) {
   return `${year}-${pad(month + 1)}-${pad(day)}`;
 }
 
-// ─── Day detail modal ─────────────────────────────────────────────────────────
+// ─── Day detail modal ─────────────────────
 function DayDetailModal({
   visible, dateStr, appointments, dailyRevenue, loadingDay, onClose,
 }: {
@@ -351,7 +351,7 @@ export default function CalendarScreen() {
     <SafeAreaView style={cs.safe}>
       <View style={cs.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={cs.backBtn}>
-          <Text style={cs.backTxt}>← Back</Text>
+          <Text style={cs.backTxt}>←</Text>
         </TouchableOpacity>
         <Text style={cs.title}>Calendar</Text>
         <View style={cs.yearNav}>
@@ -365,7 +365,12 @@ export default function CalendarScreen() {
         </View>
       </View>
 
-      <ScrollView style={cs.scroll} contentContainerStyle={cs.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={cs.scroll}
+        scrollEnabled={true}
+        contentContainerStyle={cs.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Year stats */}
         {loadingYear ? (
           <View style={cs.loadingBox}><ActivityIndicator color="#2563EB" /></View>
@@ -443,7 +448,7 @@ const cs = StyleSheet.create({
   safe:         { flex: 1, backgroundColor: '#F1F5F9' },
   header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   backBtn:      { marginRight: 10 },
-  backTxt:      { fontSize: 14, color: '#2563EB', fontWeight: '600' },
+  backTxt:      { fontSize: 20, color: '#2563EB', fontWeight: '600' },
   title:        { fontSize: 17, fontWeight: '700', color: '#111827', flex: 1 },
   yearNav:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
   navBtn:       { width: 30, height: 30, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E5E7EB' },

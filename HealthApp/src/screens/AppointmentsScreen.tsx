@@ -66,7 +66,7 @@ export default function AppointmentsScreen() {
     <SafeAreaView style={s.safe}>
       <View style={s.topBar}>
         <TouchableOpacity style={s.backBtn} onPress={() => navigation.navigate('Dashboard' as never)}>
-          <Text style={s.backText}>Back</Text>
+          <Text style={s.backText}>←</Text>
         </TouchableOpacity>
         <View style={s.titleBlock}>
           <Text style={s.title}>Appointments</Text>
@@ -105,6 +105,7 @@ export default function AppointmentsScreen() {
       ) : (
         <ScrollView
           style={s.scroll}
+          scrollEnabled={true}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
         >
           {error && (
@@ -144,7 +145,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F1F5F9' },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   backBtn: { marginRight: 12 },
-  backText: { fontSize: 14, color: '#2563EB', fontWeight: '800' },
+  backText: { fontSize: 20, color: '#2563EB', fontWeight: '800' },
   titleBlock: { flex: 1 },
   title: { fontSize: 20, fontWeight: '800', color: '#111827' },
   subtitle: { fontSize: 12, color: '#6B7280', marginTop: 2 },
